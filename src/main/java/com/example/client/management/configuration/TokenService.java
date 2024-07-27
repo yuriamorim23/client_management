@@ -15,7 +15,7 @@ import com.example.client.management.models.UserModel;
 @Service
 public class TokenService {
 
-    private String secret = "segredinho";
+    private String secret = "secret";
 
     public String generateToken(UserModel userModel){
         try {
@@ -51,6 +51,6 @@ public class TokenService {
         }
 
         private Instant getExpirationDate(){
-            return LocalDateTime.now().plusHours(2).toInstant(ZoneOffset.of("-03:00"));
+            return LocalDateTime.now().plusMinutes(1).toInstant(ZoneOffset.of("-03:00"));
         }
     }

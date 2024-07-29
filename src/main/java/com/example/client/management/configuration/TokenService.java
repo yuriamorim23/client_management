@@ -1,8 +1,8 @@
 package com.example.client.management.configuration;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
+import java.util.Date;
 
 import org.springframework.stereotype.Service;
 
@@ -15,42 +15,32 @@ import com.example.client.management.models.UserModel;
 @Service
 public class TokenService {
 
-    private String secret = "secret";
+	private String secret = "secret";
 
-    public String generateToken(UserModel userModel){
-        try {
-            Algorithm algorithm = Algorithm.HMAC256(secret);
+	public String generateToken(UserModel userModel) {
+		try {
+			Algorithm algorithm = Algorithm.HMAC256(secret);
+			String token = JWT.create().withIssuer("auth").withSubject(userModel.getEmail())
+					.withExpiresAt(getExpirationDate()).sign(algorithm);
+			return token;
+		} catch (JWTCreationException exception) {
+			throw new RuntimeException("Error while generating token", exception);
+		}
+	}
 
-            String token = JWT.create()
-                .withIssuer("auth")
-                .withSubject(userModel.getEmail())
-                .withExpiresAt(getExpirationDate())
-                .sign(algorithm);
-            return token;
+	public String validateToken(String token) {
+		try {
+			Algorithm algorithm = Algorithm.HMAC256(secret);
 
+			return JWT.require(algorithm).withIssuer("auth").build().verify(token).getSubject();
+		}
 
-        } catch (JWTCreationException exception) {
-            throw new RuntimeException("ERROR WHILE GENERATING TOKEN", exception);
-        }
-    }
+		catch (JWTVerificationException exception) {
+			return "";
+		}
+	}
 
-        public String validateToken(String token){
-            try {
-                Algorithm algorithm = Algorithm.HMAC256(secret);
-
-                return JWT.require(algorithm)
-                    .withIssuer("auth")
-                    .build()
-                    .verify(token)
-                    .getSubject();
-            } 
-            
-            catch (JWTVerificationException exception) {
-                return "";
-            }
-        }
-
-        private Instant getExpirationDate(){
-            return LocalDateTime.now().plusMinutes(1).toInstant(ZoneOffset.of("-03:00"));
-        }
-    }
+	private Date getExpirationDate() {
+		return Date.from(LocalDateTime.now().plusMinutes(1).atZone(ZoneId.systemDefault()).toInstant());
+	}
+}

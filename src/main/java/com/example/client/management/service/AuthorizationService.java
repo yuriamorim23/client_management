@@ -9,7 +9,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -42,15 +41,24 @@ public class AuthorizationService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        return userRepository.findByEmail(email);
-    } 
+        UserDetails user = userRepository.findByEmail(email);
+        if (user == null) {
+            throw new UsernameNotFoundException("User not found with email: " + email);
+        }
+        return user;
+    }
 
     public ResponseEntity<Object> login(@RequestBody @Valid AuthenticationDto data) {
         if (data.email() == null || data.email().trim().isEmpty()) {
-            return ResponseEntity.badRequest().body("Erro: Email vazio.");
+            return ResponseEntity.badRequest().body("Error: Email is empty.");
         }
         if (data.password() == null || data.password().trim().isEmpty()) {
-            return ResponseEntity.badRequest().body("Erro: Senha vazia.");
+            return ResponseEntity.badRequest().body("Error: password is empty.");
+        }
+
+        UserDetails user = userRepository.findByEmail(data.email());
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Error: Email does not exist.");
         }
 
         try {
@@ -62,11 +70,10 @@ public class AuthorizationService implements UserDetailsService {
             return ResponseEntity.ok(new LoginResponseDto(token));
             
         } catch (BadCredentialsException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Erro: Senha está errada.");
-        } catch (AuthenticationException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Erro: Email não existe.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Error: password is wrong.");
         }
     }
+
 
 
     public ResponseEntity<Object> register (@RequestBody RegisterDto registerDto, @RequestHeader("Authorization") String token) {

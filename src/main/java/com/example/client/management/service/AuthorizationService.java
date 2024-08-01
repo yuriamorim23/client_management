@@ -58,7 +58,7 @@ public class AuthorizationService implements UserDetailsService {
 
         UserDetails user = userRepository.findByEmail(data.email());
         if (user == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Error: Email does not exist.");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Error: Email does not exist.");
         }
 
         try {

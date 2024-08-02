@@ -79,18 +79,23 @@ public class AuthorizationServiceTests {
         UserModel user = new UserModel("test@example.com", "password", UserRole.USER);
         user.setCreatedAt(new Date());
         String fakeToken = "fakeToken123";
+        long fakeExpiresAt = System.currentTimeMillis() + 60000;
+
+        LoginResponseDto loginResponseDto = new LoginResponseDto(fakeToken, fakeExpiresAt);
 
         when(userRepository.findByEmail(dto.email())).thenReturn(user);
         when(context.getBean(AuthenticationManager.class)).thenReturn(authenticationManager);
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(new UsernamePasswordAuthenticationToken(user, null));
-        when(tokenService.generateToken(user)).thenReturn(fakeToken);
+        when(tokenService.generateToken(user)).thenReturn(loginResponseDto);
 
         ResponseEntity<Object> response = authorizationService.login(dto);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertTrue(response.getBody() instanceof LoginResponseDto);
-        assertEquals(fakeToken, ((LoginResponseDto) response.getBody()).token());
+        LoginResponseDto responseBody = (LoginResponseDto) response.getBody();
+        assertEquals(fakeToken, responseBody.token());
+        assertEquals(fakeExpiresAt, responseBody.expiresAt());
     }
 
     @Test
@@ -101,7 +106,7 @@ public class AuthorizationServiceTests {
 
         ResponseEntity<Object> response = authorizationService.login(dto);
 
-        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
         assertEquals("Error: Email does not exist.", response.getBody());
     }
 

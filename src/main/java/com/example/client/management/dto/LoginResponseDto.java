@@ -1,5 +1,5 @@
 package com.example.client.management.dto;
 
-public record LoginResponseDto(String token) {
-    
+public record LoginResponseDto(String token, long expiresAt) {
+	
 }

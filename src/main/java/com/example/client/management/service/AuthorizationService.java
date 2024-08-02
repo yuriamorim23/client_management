@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.RequestHeader;
 
 import com.example.client.management.configuration.TokenService;
 import com.example.client.management.dto.AuthenticationDto;
-import com.example.client.management.dto.LoginResponseDto;
 import com.example.client.management.dto.RegisterDto;
 import com.example.client.management.models.UserModel;
 import com.example.client.management.repository.UserRepository;
@@ -67,7 +66,7 @@ public class AuthorizationService implements UserDetailsService {
             var auth = authenticationManager.authenticate(usernamePasswordAuthenticationToken);
 
             var token = tokenService.generateToken((UserModel) auth.getPrincipal());
-            return ResponseEntity.ok(new LoginResponseDto(token));
+            return ResponseEntity.ok(token);
             
         } catch (BadCredentialsException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Error: password is wrong.");

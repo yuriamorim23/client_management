@@ -10,6 +10,7 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTCreationException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.example.client.management.dto.LoginResponseDto;
 import com.example.client.management.models.UserModel;
 
 @Service
@@ -17,16 +18,18 @@ public class TokenService {
 
 	private String secret = "secret";
 
-	public String generateToken(UserModel userModel) {
-		try {
-			Algorithm algorithm = Algorithm.HMAC256(secret);
-			String token = JWT.create().withIssuer("auth").withSubject(userModel.getEmail())
-					.withExpiresAt(getExpirationDate()).sign(algorithm);
-			return token;
-		} catch (JWTCreationException exception) {
-			throw new RuntimeException("Error while generating token", exception);
-		}
-	}
+	public LoginResponseDto generateToken(UserModel userModel) {
+        try {
+            Algorithm algorithm = Algorithm.HMAC256(secret);
+            Date expiresAt = getExpirationDate();
+            String token = JWT.create().withIssuer("auth").withSubject(userModel.getEmail())
+                    .withExpiresAt(expiresAt).sign(algorithm);
+            return new LoginResponseDto(token, expiresAt.getTime());
+        } catch (JWTCreationException exception) {
+            throw new RuntimeException("Error while generating token", exception);
+        }
+    }
+
 
 	public String validateToken(String token) {
 		try {

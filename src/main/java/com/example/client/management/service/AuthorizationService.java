@@ -1,5 +1,6 @@
 package com.example.client.management.service;
 
+import java.util.Collections;
 import java.util.Date;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -92,4 +93,18 @@ public class AuthorizationService implements UserDetailsService {
         this.userRepository.save(newUser);
         return ResponseEntity.ok().build();
     }
+    
+    public ResponseEntity<Object> noTokenRegister(@RequestBody RegisterDto registerDto) {
+
+        if (this.userRepository.findByEmail(registerDto.email()) != null) {
+            return ResponseEntity.badRequest().body(Collections.singletonMap("error", "User already exists"));
+        }
+
+        String encryptedPassword = new BCryptPasswordEncoder().encode(registerDto.password());
+        UserModel newUser = new UserModel(registerDto.email(), encryptedPassword, registerDto.role());
+        newUser.setCreatedAt(new Date(System.currentTimeMillis()));
+        this.userRepository.save(newUser);
+        return ResponseEntity.ok().build();
+    }
+
 }

@@ -30,4 +30,9 @@ public class AuthController {
     public ResponseEntity<Object> register (@RequestBody RegisterDto registerDto, @RequestHeader("Authorization") String token) {
         return authorizationService.register(registerDto, token);
     }
+    
+    @PostMapping("/register/user")
+    public ResponseEntity<Object> noTokenRegister (@RequestBody RegisterDto registerDto) {
+        return authorizationService.noTokenRegister(registerDto);
+    }
 }

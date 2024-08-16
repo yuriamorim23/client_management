@@ -1,22 +1,32 @@
-name: Build and Push Docker Image for Backend
+name: Docker Publish
 
 on:
   push:
-    branches:
-      - main  # O workflow será disparado em pushs para a branch main
-
-env:
-  REGISTRY: docker.io
-  IMAGE_NAME: yuritech/client-management-backend
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
 
 jobs:
-  build:
-
+  build-and-push-backend:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install Docker Compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install docker-compose -y
+
+      - name: Build with Maven
+        run: mvn clean package
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -27,12 +37,23 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push Docker image
+      - name: Build and Run Docker Compose for Tests
+        run: |
+          docker-compose up -d --build
+          sleep 20  # Espera adicional para garantir que os serviços estejam prontos
+          docker-compose exec client_management_container mvn clean test  # Executar os testes dentro do container
+        env:
+          SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/client_management
+          SPRING_DATASOURCE_USERNAME: root
+          SPRING_DATASOURCE_PASSWORD: 123
+
+      - name: Build and push backend image
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          tags: ${{ secrets.DOCKER_USERNAME }}/client-management-backend:latest
 
-      - name: Log out from Docker Hub
-        run: docker logout
+      - name: Shutdown and clean up
+        run: docker-compose down

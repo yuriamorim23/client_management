@@ -6,12 +6,6 @@ on:
   pull_request:
     branches: [ "master" ]
 
-env:
-  # Docker Hub username
-  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-  # Docker Hub token
-  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-
 jobs:
   build-and-push-backend:
     runs-on: ubuntu-latest
@@ -19,6 +13,15 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Build with Maven
+        run: mvn clean package
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -43,32 +46,3 @@ jobs:
           push: true
           tags: ${{ steps.meta-backend.outputs.tags }}
           labels: ${{ steps.meta-backend.outputs.labels }}
-
-  build-and-push-mysql:
-    runs-on: ubuntu-latest
-    needs: build-and-push-backend
-
-    steps:
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Extract Docker metadata for MySQL
-        id: meta-mysql
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.DOCKER_USERNAME }}/client-management-mysql
-
-      - name: Build and push MySQL image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: mysql/Dockerfile
-          push: true
-          tags: ${{ steps.meta-mysql.outputs.tags }}
-          labels: ${{ steps.meta-mysql.outputs.labels }}

@@ -3,10 +3,7 @@ name: Build and Push Docker Image for Backend
 on:
   push:
     branches:
-      - main
-  pull_request:
-    branches:
-      - main
+      - main  # O workflow será disparado em pushs para a branch main
 
 env:
   REGISTRY: docker.io
@@ -35,4 +32,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ env.REGISTRY }}/yuritech/client-management-backend:latest
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Log out from Docker Hub
+        run: docker logout

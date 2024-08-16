@@ -10,6 +10,20 @@ jobs:
   build-and-push-backend:
     runs-on: ubuntu-latest
 
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: 123
+          MYSQL_DATABASE: client_management
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -34,15 +48,12 @@ jobs:
 
       - name: Build and Run Docker Compose for Tests
         run: |
-          docker-compose build
-          docker-compose up -d
+          docker-compose up -d --build
+          docker-compose exec client_management_container mvn clean test
         env:
-          SPRING_DATASOURCE_URL: jdbc:mysql://mysql_container:3306/client_management
+          SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/client_management
           SPRING_DATASOURCE_USERNAME: root
           SPRING_DATASOURCE_PASSWORD: 123
-
-      - name: Run Tests
-        run: docker-compose exec client_management_container mvn clean test
 
       - name: Build and push backend image
         uses: docker/build-push-action@v5

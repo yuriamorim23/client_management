@@ -52,11 +52,6 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: Dockerfile  # Usando o mesmo Dockerfile mas com um contexto diferente
-          build-args:
-            BASE_IMAGE: mysql:8.0
+          file: Dockerfile  # Usando o mesmo Dockerfile ou outro se necessário
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.MYSQL_IMAGE_NAME }}:latest
-
-      - name: Shutdown and clean up
-        run: docker-compose down

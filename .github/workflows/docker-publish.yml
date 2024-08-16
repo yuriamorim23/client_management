@@ -10,6 +10,20 @@ jobs:
   build-and-push-backend:
     runs-on: ubuntu-latest
 
+    services:
+      mysql:
+        image: mysql:8.0
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_ROOT_PASSWORD: 123
+          MYSQL_DATABASE: client_management
+        options: > 
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -20,7 +34,18 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Wait for MySQL to be ready
+        run: |
+          until docker exec ${{ job.services.mysql.id }} mysql -uroot -p123 -e "SHOW DATABASES;" > /dev/null 2>&1; do
+            echo "Waiting for MySQL..."
+            sleep 5
+          done
+
       - name: Build with Maven
+        env:
+          SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/client_management
+          SPRING_DATASOURCE_USERNAME: root
+          SPRING_DATASOURCE_PASSWORD: 123
         run: mvn clean package
 
       - name: Set up Docker Buildx
@@ -36,7 +61,7 @@ jobs:
         id: meta-backend
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.DOCKER_USERNAME }}/client-management-backend
+          images: ${{ secrets.DOCKER_USERNAME }}/client-management-backend
 
       - name: Build and push backend image
         uses: docker/build-push-action@v5

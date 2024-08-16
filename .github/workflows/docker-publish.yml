@@ -1,17 +1,24 @@
-name: Docker Publish
+name: Build and Push Docker Image for Backend
 
 on:
   push:
-    branches: [ "master" ]
+    branches:
+      - main
   pull_request:
-    branches: [ "master" ]
+    branches:
+      - main
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: yuritech/client-management-backend
 
 jobs:
-  build-and-push-backend:
+  build:
+
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Java
@@ -19,11 +26,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-
-      - name: Install Docker Compose
-        run: |
-          sudo apt-get update
-          sudo apt-get install docker-compose -y
 
       - name: Build with Maven
         run: mvn clean package
@@ -37,23 +39,9 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and Run Docker Compose for Tests
-        run: |
-          docker-compose up -d --build
-          sleep 20  # Espera adicional para garantir que os serviços estejam prontos
-          docker-compose exec client_management_container mvn clean test  # Executar os testes dentro do container
-        env:
-          SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/client_management
-          SPRING_DATASOURCE_USERNAME: root
-          SPRING_DATASOURCE_PASSWORD: 123
-
-      - name: Build and push backend image
+      - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/client-management-backend:latest
-
-      - name: Shutdown and clean up
-        run: docker-compose down
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest

@@ -41,7 +41,6 @@ jobs:
         run: |
           docker-compose up -d --build
           sleep 20  # Espera adicional para garantir que os serviços estejam prontos
-          docker-compose logs mysql_container  # Logs do MySQL para diagnóstico
           docker-compose exec client_management_container mvn clean test  # Executar os testes dentro do container
         env:
           SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/client_management

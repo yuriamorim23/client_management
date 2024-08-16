@@ -22,12 +22,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Build the backend with Maven
+        run: mvn clean package
+
       - name: Set up Docker Compose
         run: |
           sudo apt-get update
           sudo apt-get install docker-compose -y
 
-      - name: Build with Docker Compose
+      - name: Build and Run with Docker Compose
         run: docker-compose up -d --build
 
       - name: Run Tests

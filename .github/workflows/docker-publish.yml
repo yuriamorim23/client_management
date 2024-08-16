@@ -10,43 +10,9 @@ jobs:
   build-and-push-backend:
     runs-on: ubuntu-latest
 
-    services:
-      mysql:
-        image: mysql:8.0
-        ports:
-          - 3306:3306
-        env:
-          MYSQL_ROOT_PASSWORD: 123
-          MYSQL_DATABASE: client_management
-        options: > 
-          --health-cmd="mysqladmin ping --silent"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Set up Java
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Wait for MySQL to be ready
-        run: |
-          until docker exec ${{ job.services.mysql.id }} mysql -uroot -p123 -e "SHOW DATABASES;" > /dev/null 2>&1; do
-            echo "Waiting for MySQL..."
-            sleep 5
-          done
-
-      - name: Build with Maven
-        env:
-          SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/client_management
-          SPRING_DATASOURCE_USERNAME: root
-          SPRING_DATASOURCE_PASSWORD: 123
-        run: mvn clean package
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -57,11 +23,19 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Extract Docker metadata for backend
-        id: meta-backend
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ secrets.DOCKER_USERNAME }}/client-management-backend
+      - name: Set up Docker Compose
+        run: sudo apt-get install docker-compose
+
+      - name: Build and Run Docker Compose for Tests
+        run: docker-compose up -d
+
+      - name: Run Tests
+        run: |
+          docker-compose exec client_management_container mvn clean test
+        env:
+          SPRING_DATASOURCE_URL: jdbc:mysql://mysql_container:3306/client_management
+          SPRING_DATASOURCE_USERNAME: root
+          SPRING_DATASOURCE_PASSWORD: 123
 
       - name: Build and push backend image
         uses: docker/build-push-action@v5
@@ -69,5 +43,7 @@ jobs:
           context: .
           file: Dockerfile
           push: true
-          tags: ${{ steps.meta-backend.outputs.tags }}
-          labels: ${{ steps.meta-backend.outputs.labels }}
+          tags: ${{ secrets.DOCKER_USERNAME }}/client-management-backend:latest
+
+      - name: Shutdown and clean up
+        run: docker-compose down

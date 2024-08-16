@@ -1,0 +1,27 @@
+version: '3.8'
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_container
+    environment:
+      MYSQL_ROOT_PASSWORD: 123
+      MYSQL_DATABASE: client_management
+    ports:
+      - "3307:3306"  # Alterando a porta exposta para 3307
+    volumes:
+      - db_data:/var/lib/mysql
+
+  client-management:
+    build: .
+    container_name: client_management_container
+    ports:
+      - "8081:8080"  # Rodando o backend na porta 8081 para evitar conflito com a aplicação local
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/client_management
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 123
+    depends_on:
+      - mysql
+
+volumes:
+  db_data:

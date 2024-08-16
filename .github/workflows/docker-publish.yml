@@ -39,13 +39,15 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Push Backend Image
-        run: docker tag clientmanagement-client-management:latest ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:latest
-        run: docker push ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:latest
+      - name: Tag and Push Backend Image
+        run: |
+          docker tag clientmanagement-client-management:latest ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:latest
+          docker push ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:latest
 
-      - name: Push MySQL Image
-        run: docker tag mysql:8.0 ${{ env.REGISTRY }}/${{ env.MYSQL_IMAGE_NAME }}:latest
-        run: docker push ${{ env.REGISTRY }}/${{ env.MYSQL_IMAGE_NAME }}:latest
+      - name: Tag and Push MySQL Image
+        run: |
+          docker tag mysql:8.0 ${{ env.REGISTRY }}/${{ env.MYSQL_IMAGE_NAME }}:latest
+          docker push ${{ env.REGISTRY }}/${{ env.MYSQL_IMAGE_NAME }}:latest
 
       - name: Shutdown and Cleanup
         run: docker-compose down

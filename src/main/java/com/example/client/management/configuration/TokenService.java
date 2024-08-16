@@ -44,6 +44,6 @@ public class TokenService {
 	}
 
 	private Date getExpirationDate() {
-		return Date.from(LocalDateTime.now().plusMinutes(1).atZone(ZoneId.systemDefault()).toInstant());
+		return Date.from(LocalDateTime.now().plusMinutes(2).atZone(ZoneId.systemDefault()).toInstant());
 	}
 }

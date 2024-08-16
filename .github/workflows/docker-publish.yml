@@ -40,8 +40,8 @@ jobs:
       - name: Build and Run Docker Compose for Tests
         run: |
           docker-compose up -d --build
-          sleep 20  # Espera adicional para garantir que os serviços estejam prontos
-          docker-compose exec client_management_container mvn clean test  # Executar os testes dentro do container
+          sleep 20
+          docker-compose exec client_management_container mvn clean test
         env:
           SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/client_management
           SPRING_DATASOURCE_USERNAME: root

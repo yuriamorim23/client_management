@@ -11,7 +11,7 @@ on:
 env:
   REGISTRY: docker.io
   BACKEND_IMAGE_NAME: yuritech/client-management-backend
-  DB_IMAGE_NAME: yuritech/localhost
+  DB_IMAGE_NAME: yuritech/mysql-database
 
 jobs:
   build:

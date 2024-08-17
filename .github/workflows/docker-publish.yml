@@ -1,4 +1,4 @@
-name: Build and Push Docker Image for Backend
+name: Build and Push Docker Images for Backend and Database
 
 on:
   push:
@@ -10,7 +10,8 @@ on:
 
 env:
   REGISTRY: docker.io
-  IMAGE_NAME: yuritech/client-management-backend
+  BACKEND_IMAGE_NAME: yuritech/client-management-backend
+  DB_IMAGE_NAME: yuritech/mysql-database
 
 jobs:
   build:
@@ -36,12 +37,26 @@ jobs:
           distribution: 'adopt'
           java-version: '17'
 
-      - name: Build the project using Maven
+      - name: Build the backend project using Maven
         run: mvn clean package -DskipTests
 
-      - name: Build and push Docker image
+      - name: Build and push Backend Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: ${{ env.REGISTRY }}/yuritech/client-management-backend:latest
+          tags: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:latest
+
+      - name: Create Dockerfile for MySQL
+        run: |
+          echo "FROM mysql:8.0" > Dockerfile-db
+          echo "ENV MYSQL_ROOT_PASSWORD=123" >> Dockerfile-db
+          echo "ENV MYSQL_DATABASE=client_management" >> Dockerfile-db
+
+      - name: Build and push MySQL Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile-db
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.DB_IMAGE_NAME }}:latest

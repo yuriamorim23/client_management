@@ -1,7 +1,7 @@
 version: '3.8'
 services:
   mysql:
-    image: yuritech/mysql-database:latest  # Use a imagem publicada no Docker Hub
+    image: mysql:8.0
     container_name: mysql_container
     environment:
       MYSQL_ROOT_PASSWORD: 123
@@ -12,7 +12,7 @@ services:
       - db_data:/var/lib/mysql
 
   client-management:
-    image: yuritech/client-management-backend:latest  # Use a imagem publicada no Docker Hub
+    build: .
     container_name: client_management_container
     ports:
       - "8081:8080"  # Rodando o backend na porta 8081 para evitar conflito com a aplicação local

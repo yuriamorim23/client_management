@@ -61,34 +61,10 @@ jobs:
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.DB_IMAGE_NAME }}:latest
 
-      - name: Create Docker Compose file
+      - name: Install Docker Compose
         run: |
-          echo "version: '3.8'" > docker-compose.yml
-          echo "services:" >> docker-compose.yml
-          echo "  mysql:" >> docker-compose.yml
-          echo "    image: ${{ env.REGISTRY }}/${{ env.DB_IMAGE_NAME }}:latest" >> docker-compose.yml
-          echo "    ports:" >> docker-compose.yml
-          echo "      - '3307:3306'" >> docker-compose.yml
-          echo "    environment:" >> docker-compose.yml
-          echo "      MYSQL_ROOT_PASSWORD: 123" >> docker-compose.yml
-          echo "      MYSQL_DATABASE: client_management" >> docker-compose.yml
-          echo "    healthcheck:" >> docker-compose.yml
-          echo "      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost']" >> docker-compose.yml
-          echo "      interval: 30s" >> docker-compose.yml
-          echo "      timeout: 10s" >> docker-compose.yml
-          echo "      retries: 5" >> docker-compose.yml
-          echo "      start_period: 30s" >> docker-compose.yml
-          echo "  client-management:" >> docker-compose.yml
-          echo "    image: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:latest" >> docker-compose.yml
-          echo "    ports:" >> docker-compose.yml
-          echo "      - '8081:8080'" >> docker-compose.yml
-          echo "    environment:" >> docker-compose.yml
-          echo "      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/client_management" >> docker-compose.yml
-          echo "      SPRING_DATASOURCE_USERNAME: root" >> docker-compose.yml
-          echo "      SPRING_DATASOURCE_PASSWORD: 123" >> docker-compose.yml
-          echo "    depends_on:" >> docker-compose.yml
-          echo "      mysql:" >> docker-compose.yml
-          echo "        condition: service_healthy" >> docker-compose.yml
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
 
       - name: Deploy with Docker Compose
         run: docker-compose up -d

@@ -1,4 +1,4 @@
-name: Build, Push and Deploy with Docker Compose
+name: Build, Push, and Deploy with Docker Compose
 
 on:
   push:
@@ -72,6 +72,12 @@ jobs:
           username: ubuntu
           key: ${{ secrets.AWS_SSH_KEY }}
           script: |
+            # Verificar se o arquivo docker-compose.yml existe
+            if [ ! -f docker-compose.yml ]; then
+              echo "O arquivo docker-compose.yml não foi encontrado no repositório!"
+              exit 1
+            fi
+
             # Substituir as imagens no docker-compose.yml pelo repositório atualizado
             sed -i "s|image:.*mysql:8.0|image: ${{ env.REGISTRY }}/${{ env.DB_IMAGE_NAME }}:latest|" docker-compose.yml
             sed -i "s|build: .|image: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:latest|" docker-compose.yml
@@ -81,3 +87,6 @@ jobs:
 
             # Iniciar os serviços usando o Docker Compose
             docker-compose up -d
+
+            # Validar os contêineres em execução
+            docker ps

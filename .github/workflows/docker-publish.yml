@@ -86,8 +86,8 @@ jobs:
             docker stop database || true
             docker rm database || true
 
-            # Subir o banco de dados
-            docker run -d --name database -e MYSQL_ROOT_PASSWORD=123 -e MYSQL_DATABASE=client_management -p 3306:3306 $DB_IMAGE
+            # Subir o banco de dados na porta 3307
+            docker run -d --name database -e MYSQL_ROOT_PASSWORD=123 -e MYSQL_DATABASE=client_management -p 3307:3306 $DB_IMAGE
 
-            # Subir o backend
-            docker run -d --name backend --link database -p 8080:8080 $BACKEND_IMAGE
+            # Subir o backend na porta 8081
+            docker run -d --name backend --link database -p 8081:8080 $BACKEND_IMAGE

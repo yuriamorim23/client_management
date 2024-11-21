@@ -15,7 +15,6 @@ env:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -61,10 +60,34 @@ jobs:
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.DB_IMAGE_NAME }}:latest
 
-      - name: Install Docker Compose
-        run: |
-          sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
 
-      - name: Deploy with Docker Compose
-        run: docker-compose up -d
+    steps:
+      - name: SSH and Deploy to EC2
+        uses: appleboy/ssh-action@v0.1.5
+        with:
+          host: ${{ secrets.AWS_EC2_IP }}
+          username: ubuntu
+          key: ${{ secrets.AWS_SSH_KEY }}
+          script: |
+            # Variáveis de ambiente
+            BACKEND_IMAGE="${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:latest"
+            DB_IMAGE="${{ env.REGISTRY }}/${{ env.DB_IMAGE_NAME }}:latest"
+
+            # Baixar as novas imagens do Docker Hub
+            docker pull $BACKEND_IMAGE
+            docker pull $DB_IMAGE
+
+            # Parar e remover contêineres antigos, se existirem
+            docker stop backend || true
+            docker rm backend || true
+            docker stop database || true
+            docker rm database || true
+
+            # Subir o banco de dados
+            docker run -d --name database -e MYSQL_ROOT_PASSWORD=123 -e MYSQL_DATABASE=client_management -p 3306:3306 $DB_IMAGE
+
+            # Subir o backend
+            docker run -d --name backend --link database -p 8080:8080 $BACKEND_IMAGE

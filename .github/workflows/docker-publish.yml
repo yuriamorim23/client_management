@@ -1,4 +1,4 @@
-name: Build and Push Docker Images for Backend and Database
+name: Build, Push and Deploy with Docker Compose
 
 on:
   push:
@@ -72,32 +72,12 @@ jobs:
           username: ubuntu
           key: ${{ secrets.AWS_SSH_KEY }}
           script: |
-            # Criar a rede Docker, caso ainda não exista
-            docker network create client-management-network || true
+            # Substituir as imagens no docker-compose.yml pelo repositório atualizado
+            sed -i "s|image:.*mysql:8.0|image: ${{ env.REGISTRY }}/${{ env.DB_IMAGE_NAME }}:latest|" docker-compose.yml
+            sed -i "s|build: .|image: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:latest|" docker-compose.yml
 
-            # Variáveis de ambiente
-            BACKEND_IMAGE="${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:latest"
-            DB_IMAGE="${{ env.REGISTRY }}/${{ env.DB_IMAGE_NAME }}:latest"
+            # Parar e remover todos os contêineres existentes
+            docker-compose down || true
 
-            # Baixar as novas imagens do Docker Hub
-            docker pull $BACKEND_IMAGE
-            docker pull $DB_IMAGE
-
-            # Parar e remover contêineres antigos, se existirem
-            docker stop backend || true
-            docker rm backend || true
-            docker stop database || true
-            docker rm database || true
-
-            # Subir o banco de dados na rede
-            docker run -d --name database --network client-management-network \
-              -e MYSQL_ROOT_PASSWORD=123 \
-              -e MYSQL_DATABASE=client_management \
-              -p 3307:3306 \
-              $DB_IMAGE
-
-            # Subir o backend na rede
-            docker run -d --name backend --network client-management-network \
-              -e SPRING_DATASOURCE_URL=jdbc:mysql://database:3306/client_management \
-              -p 8081:8080 \
-              $BACKEND_IMAGE
+            # Iniciar os serviços usando o Docker Compose
+            docker-compose up -d

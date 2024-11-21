@@ -65,6 +65,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: SSH and Deploy to EC2
         uses: appleboy/ssh-action@v0.1.5
         with:
@@ -72,11 +75,26 @@ jobs:
           username: ubuntu
           key: ${{ secrets.AWS_SSH_KEY }}
           script: |
-            # Verificar se o arquivo docker-compose.yml existe
-            if [ ! -f docker-compose.yml ]; then
-              echo "O arquivo docker-compose.yml não foi encontrado no repositório!"
-              exit 1
-            fi
+            # Criar diretório para o projeto se não existir
+            mkdir -p ~/client-management
+
+      - name: Copy docker-compose.yml to EC2
+        uses: appleboy/scp-action@v0.1.1
+        with:
+          host: ${{ secrets.AWS_EC2_IP }}
+          username: ubuntu
+          key: ${{ secrets.AWS_SSH_KEY }}
+          source: ./docker-compose.yml
+          target: ~/client-management/
+
+      - name: Deploy with Docker Compose
+        uses: appleboy/ssh-action@v0.1.5
+        with:
+          host: ${{ secrets.AWS_EC2_IP }}
+          username: ubuntu
+          key: ${{ secrets.AWS_SSH_KEY }}
+          script: |
+            cd ~/client-management
 
             # Substituir as imagens no docker-compose.yml pelo repositório atualizado
             sed -i "s|image:.*mysql:8.0|image: ${{ env.REGISTRY }}/${{ env.DB_IMAGE_NAME }}:latest|" docker-compose.yml

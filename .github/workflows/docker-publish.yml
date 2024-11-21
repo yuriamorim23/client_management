@@ -72,6 +72,9 @@ jobs:
           username: ubuntu
           key: ${{ secrets.AWS_SSH_KEY }}
           script: |
+            # Criar a rede Docker, caso ainda não exista
+            docker network create client-management-network || true
+
             # Variáveis de ambiente
             BACKEND_IMAGE="${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:latest"
             DB_IMAGE="${{ env.REGISTRY }}/${{ env.DB_IMAGE_NAME }}:latest"
@@ -86,8 +89,15 @@ jobs:
             docker stop database || true
             docker rm database || true
 
-            # Subir o banco de dados na porta 3307
-            docker run -d --name database -e MYSQL_ROOT_PASSWORD=123 -e MYSQL_DATABASE=client_management -p 3307:3306 $DB_IMAGE
+            # Subir o banco de dados na rede
+            docker run -d --name database --network client-management-network \
+              -e MYSQL_ROOT_PASSWORD=123 \
+              -e MYSQL_DATABASE=client_management \
+              -p 3307:3306 \
+              $DB_IMAGE
 
-            # Subir o backend na porta 8081
-            docker run -d --name backend --link database -p 8081:8080 $BACKEND_IMAGE
+            # Subir o backend na rede
+            docker run -d --name backend --network client-management-network \
+              -e SPRING_DATASOURCE_URL=jdbc:mysql://database:3306/client_management \
+              -p 8081:8080 \
+              $BACKEND_IMAGE

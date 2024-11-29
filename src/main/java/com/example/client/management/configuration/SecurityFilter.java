@@ -8,6 +8,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+
 import com.example.client.management.repository.UserRepository;
 
 import jakarta.servlet.FilterChain;
@@ -17,6 +18,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 @Component
 public class SecurityFilter extends OncePerRequestFilter{
+	
     @Autowired 
     private TokenService tokenService;
 

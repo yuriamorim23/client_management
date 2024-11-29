@@ -101,6 +101,10 @@ jobs:
               sudo chmod +x /usr/local/bin/docker-compose
             fi
 
+            # Remover as imagens antigas, se existirem
+            docker rmi ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:latest || true
+            docker rmi ${{ env.REGISTRY }}/${{ env.DB_IMAGE_NAME }}:latest || true
+
             # Parar e remover contêineres existentes
             docker-compose down || true
 

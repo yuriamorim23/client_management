@@ -32,11 +32,11 @@ public class SecurityConfigurations {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .cors(cors -> cors.disable())
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authorize -> authorize
-            	.requestMatchers(HttpMethod.POST, "/auth/register/user").permitAll()
+                .requestMatchers(HttpMethod.POST, "/auth/register/user").permitAll()
                 .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
                 .requestMatchers(HttpMethod.POST, "/auth/register").hasRole("ADMIN")
                 .anyRequest().authenticated()
@@ -45,6 +45,7 @@ public class SecurityConfigurations {
 
         return httpSecurity.build();
     }
+
 
 
     @Bean

@@ -82,14 +82,10 @@ jobs:
           key: ${{ secrets.AWS_SSH_KEY }}
           script: |
             # Parar e remover containers antigos
-            docker stop backend || true
-            docker rm backend || true
-            docker stop database || true
-            docker rm database || true
-
-            # Remover imagens antigas para evitar duplicação
-            docker image rm ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:latest || true
-            docker image rm ${{ env.REGISTRY }}/${{ env.DB_IMAGE_NAME }}:latest || true
+            docker stop client_management_container || true
+            docker rm client_management_container || true
+            docker stop mysql_container || true
+            docker rm mysql_container || true
 
             # Baixar as imagens mais recentes do Docker Hub
             docker pull ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:latest
@@ -101,9 +97,8 @@ jobs:
               sudo chmod +x /usr/local/bin/docker-compose
             fi
 
-            # Substituir imagens no arquivo docker-compose.yml
-            sed -i "s|image:.*mysql:8.0|image: ${{ env.REGISTRY }}/${{ env.DB_IMAGE_NAME }}:latest|" docker-compose.yml
-            sed -i "s|build: .|image: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:latest|" docker-compose.yml
+            # Navegar para o diretório do projeto
+            cd ~/client-management
 
             # Subir serviços usando Docker Compose
             docker-compose down || true

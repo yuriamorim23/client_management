@@ -81,19 +81,19 @@ jobs:
           username: ubuntu
           key: ${{ secrets.AWS_SSH_KEY }}
           script: |
-            # Clonar ou atualizar o repositório na instância EC2
-            if [ ! -d "~/client-management" ]; then
-              git clone https://github.com/seu-usuario/seu-repositorio.git ~/client-management
-            else
-              cd ~/client-management
-              git pull origin master
-            fi
-
-            cd ~/client-management
-
             # Substituir as imagens no docker-compose.yml pelo repositório atualizado
             sed -i "s|image:.*mysql:8.0|image: ${{ env.REGISTRY }}/${{ env.DB_IMAGE_NAME }}:latest|" docker-compose.yml
             sed -i "s|build: .|image: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:latest|" docker-compose.yml
+
+            # Parar o backend e banco de dados, se estiverem rodando
+            docker stop backend || true
+            docker rm backend || true
+            docker stop database || true
+            docker rm database || true
+
+            # Baixar as imagens mais recentes do Docker Hub
+            docker pull ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:latest
+            docker pull ${{ env.REGISTRY }}/${{ env.DB_IMAGE_NAME }}:latest
 
             # Garantir que o Docker Compose está instalado
             if ! [ -x "$(command -v docker-compose)" ]; then
@@ -101,14 +101,8 @@ jobs:
               sudo chmod +x /usr/local/bin/docker-compose
             fi
 
-            # Remover as imagens antigas, se existirem
-            docker rmi ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:latest || true
-            docker rmi ${{ env.REGISTRY }}/${{ env.DB_IMAGE_NAME }}:latest || true
-
-            # Parar e remover contêineres existentes
-            docker-compose down || true
-
             # Subir os serviços usando Docker Compose
+            docker-compose down || true
             docker-compose up -d
 
             # Validar contêineres em execução

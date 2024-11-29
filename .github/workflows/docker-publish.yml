@@ -1,4 +1,4 @@
-name: Build, Push, and Deploy Backend with Docker Compose
+name: Build, Push, and Deploy Backend with Database to AWS EC2
 
 on:
   push:
@@ -18,33 +18,33 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout do repositório
+      # 1. Checkout do repositório
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Configurar o Docker Buildx
+      # 2. Configurar o Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Login no Docker Hub
+      # 3. Login no Docker Hub
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # Configurar o JDK 17
+      # 4. Configurar o JDK 17
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
           distribution: 'adopt'
           java-version: '17'
 
-      # Construir o backend usando Maven
+      # 5. Construir o backend usando Maven
       - name: Build the backend project using Maven
         run: mvn clean package -DskipTests
 
-      # Construir e enviar a imagem do backend para o Docker Hub
+      # 6. Construir e enviar a imagem do backend para o Docker Hub
       - name: Build and push Backend Docker image
         uses: docker/build-push-action@v5
         with:
@@ -52,14 +52,14 @@ jobs:
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:latest
 
-      # Criar Dockerfile para o banco de dados MySQL
+      # 7. Criar Dockerfile para o banco de dados MySQL
       - name: Create Dockerfile for MySQL
         run: |
           echo "FROM mysql:8.0" > Dockerfile-db
           echo "ENV MYSQL_ROOT_PASSWORD=123" >> Dockerfile-db
           echo "ENV MYSQL_DATABASE=client_management" >> Dockerfile-db
 
-      # Construir e enviar a imagem do banco de dados para o Docker Hub
+      # 8. Construir e enviar a imagem do banco de dados para o Docker Hub
       - name: Build and push MySQL Docker image
         uses: docker/build-push-action@v5
         with:
@@ -73,7 +73,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Conectar-se via SSH à instância EC2
+      # 1. Conectar-se via SSH à instância EC2
       - name: SSH and Deploy to EC2
         uses: appleboy/ssh-action@v0.1.5
         with:
@@ -82,10 +82,14 @@ jobs:
           key: ${{ secrets.AWS_SSH_KEY }}
           script: |
             # Parar e remover containers antigos
-            docker stop client_management_container || true
-            docker rm client_management_container || true
-            docker stop mysql_container || true
-            docker rm mysql_container || true
+            docker stop backend || true
+            docker rm backend || true
+            docker stop database || true
+            docker rm database || true
+
+            # Remover imagens antigas para evitar duplicação
+            docker image rm ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:latest || true
+            docker image rm ${{ env.REGISTRY }}/${{ env.DB_IMAGE_NAME }}:latest || true
 
             # Baixar as imagens mais recentes do Docker Hub
             docker pull ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:latest
@@ -97,8 +101,35 @@ jobs:
               sudo chmod +x /usr/local/bin/docker-compose
             fi
 
-            # Navegar para o diretório do projeto
-            cd ~/client-management
+            # Criar ou atualizar o arquivo docker-compose.yml
+            cat > docker-compose.yml <<EOL
+            version: '3.8'
+            services:
+              mysql:
+                image: ${{ env.REGISTRY }}/${{ env.DB_IMAGE_NAME }}:latest
+                container_name: mysql_container
+                environment:
+                  MYSQL_ROOT_PASSWORD: 123
+                  MYSQL_DATABASE: client_management
+                ports:
+                  - "3307:3306"
+                volumes:
+                  - db_data:/var/lib/mysql
+
+              backend:
+                image: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:latest
+                container_name: backend_container
+                ports:
+                  - "8081:8080"
+                environment:
+                  SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/client_management
+                  SPRING_DATASOURCE_USERNAME: root
+                  SPRING_DATASOURCE_PASSWORD: 123
+                depends_on:
+                  - mysql
+            volumes:
+              db_data:
+            EOL
 
             # Subir serviços usando Docker Compose
             docker-compose down || true
